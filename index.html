@@ -58,6 +58,7 @@
   .memo button{margin-top:10px;width:100%;height:44px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-family:var(--sans);font-weight:500}
   .memo button:disabled{opacity:.45}
   .memo-status{font-size:13px;margin-top:10px;min-height:18px;color:var(--muted)}
+  .memo .sub{font-size:14px;font-weight:500;margin:0 0 4px;color:var(--ink)}
   .memo-btn{display:block;text-align:center;text-decoration:none;margin-top:6px;padding:14px;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-weight:500}
   .foot{margin-top:30px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6}
   .sample{display:inline-block;background:#FAEEDA;color:var(--amber-ink);font-size:11px;padding:3px 10px;border-radius:20px;margin-top:10px}
@@ -92,17 +93,19 @@
   <section id="tasks-sec"><p class="label">✅ 今日のタスク</p><div id="tasks"></div></section>
   <section id="dec-sec"><p class="label">🚨 モニカにしか決められないこと</p><div id="decisions" class="quiet"></div></section>
 
-  <div class="diary">
-    <h3>📔 今日の日記</h3>
-    <p class="q">① 睡眠　② 食べたもの　③ 誰と何を　④ 体調　⑤ 薬</p>
-    <p class="hint">今日は何する日？ — 家で仕事 / 外で仕事 / 予定あり / オフ</p>
-  </div>
-
   <div class="memo">
-    <h3>📝 メモ（思いついたこと）</h3>
-    <p class="hint">ここに書いて送ると、そのままNotionに届く（ページは移動しない）。あとでClaudeに「アプリメモ見て」と言えば一緒に育てられる。</p>
+    <h3>🌙 おやすみ（夜の記録）</h3>
+
+    <p class="sub">📔 今日の日記</p>
+    <p class="hint">睡眠・食べたもの・誰と何した・体調・薬… 自由に。今日はどんな日だった？</p>
+    <textarea id="diary" rows="4" placeholder="今日はどうだった？"></textarea>
+    <button id="diary-send">日記を送る</button>
+    <div class="memo-status" id="diary-status"></div>
+
+    <p class="sub" style="margin-top:20px">💭 思いついたこと</p>
+    <p class="hint">いつでも書いてOK。あとでClaudeに「アプリメモ見て」で一緒に育てられる。</p>
     <textarea id="memo" rows="3" placeholder="いま思いついたこと…"></textarea>
-    <button id="memo-send">送る</button>
+    <button id="memo-send">メモを送る</button>
     <div class="memo-status" id="memo-status"></div>
   </div>
 
@@ -159,20 +162,22 @@ el('unlock').onclick=function(){var p=el('pass').value;if(p)tryPass(p,true);};
 el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock').click();});
 var NOTES_API="https://briefing.theneuralpeach.deno.net";
 (function(){
-  var btn=el('memo-send'),ta=el('memo'),st=el('memo-status');
-  if(!btn)return;
-  if(!NOTES_API){st.textContent='（メモ送信はもうすぐ使えるようになるよ）';}
-  btn.onclick=function(){
-    var note=(ta.value||'').trim();if(!note){return;}
-    if(!NOTES_API){st.textContent='まだ接続前。もう少し待ってね。';return;}
-    btn.disabled=true;st.textContent='送ってる…';
-    fetch(NOTES_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:note,secret:localStorage.getItem('bpass')||''})})
-      .then(function(r){return r.json();}).then(function(o){
-        btn.disabled=false;
-        if(o&&o.ok){ta.value='';st.textContent='送ったよ ✓ Notionに届いた。あとでClaudeに「アプリメモ見て」';}
-        else{st.textContent='うまく送れなかった: '+((o&&o.error)||'?');}
-      }).catch(function(){btn.disabled=false;st.textContent='送れなかった（通信エラー）';});
-  };
+  function wire(taId,btnId,stId,kind,okMsg){
+    var btn=el(btnId),ta=el(taId),st=el(stId);
+    if(!btn)return;
+    btn.onclick=function(){
+      var note=(ta.value||'').trim();if(!note){return;}
+      btn.disabled=true;st.textContent='送ってる…';
+      fetch(NOTES_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:note,kind:kind,secret:localStorage.getItem('bpass')||''})})
+        .then(function(r){return r.json();}).then(function(o){
+          btn.disabled=false;
+          if(o&&o.ok){ta.value='';st.textContent=okMsg;}
+          else{st.textContent='うまく送れなかった: '+((o&&o.error)||'?');}
+        }).catch(function(){btn.disabled=false;st.textContent='送れなかった（通信エラー）';});
+    };
+  }
+  wire('diary','diary-send','diary-status','diary','日記を送ったよ ✓ Notionに届いた');
+  wire('memo','memo-send','memo-status','memo','送ったよ ✓ あとでClaudeに「アプリメモ見て」');
 })();
 fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}

@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
   if (SECRET && body.secret !== SECRET) return json({ error: "unauthorized" }, 401);
   const note = (body.note ?? "").trim();
   if (!note) return json({ error: "empty" }, 400);
+  const kind = (body as { kind?: string }).kind === "diary" ? "diary" : "memo";
+  const icon = kind === "diary" ? "📔" : "💡";
   const now = new Date().toLocaleString("ja-JP", { timeZone: "America/Los_Angeles" });
   const r = await fetch(`https://api.notion.com/v1/blocks/${PAGE_ID}/children`, {
     method: "PATCH",
@@ -38,7 +40,7 @@ Deno.serve(async (req) => {
       children: [{
         object: "block",
         type: "callout",
-        callout: { icon: { emoji: "💡" }, rich_text: [{ type: "text", text: { content: `${now}  —  ${note}` } }] },
+        callout: { icon: { emoji: icon }, rich_text: [{ type: "text", text: { content: `${now}  —  ${note}` } }] },
       }],
     }),
   });
