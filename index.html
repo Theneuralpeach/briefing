@@ -58,7 +58,7 @@
   .memo button{margin-top:10px;width:100%;height:44px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-family:var(--sans);font-weight:500}
   .memo button:disabled{opacity:.45}
   .memo-status{font-size:13px;margin-top:10px;min-height:18px;color:var(--muted)}
-  .memo-form{width:100%;height:460px;border:0;border-radius:12px;background:#fff;margin-top:4px}
+  .memo-btn{display:block;text-align:center;text-decoration:none;margin-top:6px;padding:14px;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-weight:500}
   .foot{margin-top:30px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6}
   .sample{display:inline-block;background:#FAEEDA;color:var(--amber-ink);font-size:11px;padding:3px 10px;border-radius:20px;margin-top:10px}
   #lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px;z-index:9}
@@ -100,8 +100,8 @@
 
   <div class="memo">
     <h3>📝 メモ（思いついたこと）</h3>
-    <p class="hint">ここに書いて送ると、そのままNotionに届く。あとでClaudeに「アプリメモ見て」と言えば、一緒に育てられる。</p>
-    <iframe class="memo-form" src="https://sizeme.notion.site/ebd//37bd8f409f9580ae8d71d22f0138e72f" title="アプリメモ" loading="lazy"></iframe>
+    <p class="hint">ボタンを押すとメモ画面が開く。書いて送るとそのままNotionに届く。あとでClaudeに「アプリメモ見て」と言えば、一緒に育てられる。</p>
+    <a class="memo-btn" href="https://sizeme.notion.site/ebd//37bd8f409f9580ae8d71d22f0138e72f" target="_blank" rel="noopener">📝 思いついたことを書く →</a>
   </div>
 
   <div class="foot"><span id="updated">—</span><br/><span id="sample-foot"></span></div>
