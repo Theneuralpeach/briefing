@@ -157,7 +157,7 @@ async function tryPass(pass,save){
 }
 el('unlock').onclick=function(){var p=el('pass').value;if(p)tryPass(p,true);};
 el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock').click();});
-var NOTES_API="";
+var NOTES_API="https://briefing.theneuralpeach.deno.net";
 (function(){
   var btn=el('memo-send'),ta=el('memo'),st=el('memo-status');
   if(!btn)return;
