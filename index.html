@@ -53,6 +53,14 @@
   .diary .hint{font-size:12.5px;color:var(--muted);margin-top:4px}
   .foot{margin-top:30px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6}
   .sample{display:inline-block;background:#FAEEDA;color:var(--amber-ink);font-size:11px;padding:3px 10px;border-radius:20px;margin-top:10px}
+  #lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px;z-index:9}
+  #lock .box{max-width:340px;width:100%;text-align:center}
+  #lock .sun{font-size:34px;color:var(--amber)}
+  #lock h2{font-family:var(--serif);font-weight:400;font-size:24px;margin:14px 0 6px}
+  #lock p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 18px}
+  #lock input{width:100%;height:46px;border:1px solid var(--hair);border-radius:12px;padding:0 14px;font-size:16px;font-family:var(--sans);background:var(--card);color:var(--ink)}
+  #lock button{margin-top:12px;width:100%;height:46px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-family:var(--sans);font-weight:500}
+  #lock .err{color:#A32D2D;font-size:13px;margin-top:10px;min-height:18px}
 </style>
 </head>
 <body>
@@ -61,10 +69,7 @@
   <h1 id="greeting">おはよう、Monica</h1>
   <div id="sample-badge"></div>
 
-  <section id="wins-sec">
-    <p class="label">今日の勝ち筋</p>
-    <div id="wins"></div>
-  </section>
+  <section id="wins-sec"><p class="label">今日の勝ち筋</p><div id="wins"></div></section>
 
   <div class="energy">
     <div class="meta"><span>🌙</span><span id="moon-cycle">—</span></div>
@@ -72,35 +77,12 @@
     <p class="affirm" id="affirmation">—</p>
   </div>
 
-  <section>
-    <p class="label">今ネットで人気のことば</p>
-    <p class="quiet" id="popular">—</p>
-  </section>
-
-  <section>
-    <p class="label">🧠 今日知っておくこと</p>
-    <p class="quiet" id="neuro">—</p>
-  </section>
-
-  <section>
-    <p class="label">🗓 今日の予定</p>
-    <p class="quiet" id="schedule">—</p>
-  </section>
-
-  <section id="emails-sec">
-    <p class="label">📧 要返信メール</p>
-    <div id="emails"></div>
-  </section>
-
-  <section id="tasks-sec">
-    <p class="label">✅ 今日のタスク</p>
-    <div id="tasks"></div>
-  </section>
-
-  <section id="dec-sec">
-    <p class="label">🚨 モニカにしか決められないこと</p>
-    <div id="decisions" class="quiet"></div>
-  </section>
+  <section><p class="label">今ネットで人気のことば</p><p class="quiet" id="popular">—</p></section>
+  <section><p class="label">🧠 今日知っておくこと</p><p class="quiet" id="neuro">—</p></section>
+  <section><p class="label">🗓 今日の予定</p><p class="quiet" id="schedule">—</p></section>
+  <section id="emails-sec"><p class="label">📧 要返信メール</p><div id="emails"></div></section>
+  <section id="tasks-sec"><p class="label">✅ 今日のタスク</p><div id="tasks"></div></section>
+  <section id="dec-sec"><p class="label">🚨 モニカにしか決められないこと</p><div id="decisions" class="quiet"></div></section>
 
   <div class="diary">
     <h3>📔 今日の日記</h3>
@@ -108,20 +90,28 @@
     <p class="hint">今日は何する日？ — 家で仕事 / 外で仕事 / 予定あり / オフ</p>
   </div>
 
-  <div class="foot">
-    <span id="updated">—</span><br/>
-    <span id="sample-foot"></span>
+  <div class="foot"><span id="updated">—</span><br/><span id="sample-foot"></span></div>
+</div>
+
+<div id="lock">
+  <div class="box">
+    <div class="sun">🌅</div>
+    <h2>おはよう、Monica</h2>
+    <p>合言葉を入れてね。一度だけ。<br>これでこの端末だけがbriefingを読めるようになる。</p>
+    <input id="pass" type="password" inputmode="text" autocomplete="off" placeholder="合言葉" />
+    <button id="unlock">ひらく</button>
+    <div class="err" id="err"></div>
   </div>
 </div>
 
 <script>
 function el(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function b64d(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
 function render(d){
   el('date').textContent=d.date||'';
   if(d.greeting)el('greeting').textContent=d.greeting;
-  if(d.sample){el('sample-badge').innerHTML='<span class="sample">サンプル表示 — 本物の中身は毎朝ここに入ります</span>';
-    el('sample-foot').textContent='これはデザイン確認用のサンプルです。';}
+  if(d.sample){el('sample-badge').innerHTML='<span class="sample">サンプル表示</span>';el('sample-foot').textContent='これはデザイン確認用のサンプルです。';}
   el('wins').innerHTML=(d.wins||[]).map(w=>'<div class="win"><span class="dot">◆</span><span>'+esc(w)+'</span></div>').join('')||'<p class="quiet">—</p>';
   el('moon-cycle').textContent=[d.moon,d.cycle].filter(Boolean).join(' · ');
   el('energy-note').textContent=d.energy||'';
@@ -130,16 +120,31 @@ function render(d){
   el('neuro').textContent=d.neuro||'';
   el('schedule').textContent=d.schedule||'';
   el('emails').innerHTML=(d.emails||[]).map(m=>'<div class="mail"><span class="pri '+(m.p==='med'?'med':'')+'"></span><span><span class="who">'+esc(m.who)+' — '+esc(m.what)+'</span><br><span class="sub">'+esc(m.action)+'</span></span></div>').join('')||'<p class="quiet">要返信なし</p>';
-  var t=d.tasks||{};var th='';
-  Object.keys(t).forEach(function(k){var arr=t[k]||[];if(!arr.length)return;
-    th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(x=>'<div class="task"><span class="box"></span><span>'+esc(x)+'</span></div>').join('')+'</div>';});
+  var t=d.tasks||{},th='';
+  Object.keys(t).forEach(function(k){var arr=t[k]||[];if(!arr.length)return;th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(x=>'<div class="task"><span class="box"></span><span>'+esc(x)+'</span></div>').join('')+'</div>';});
   el('tasks').innerHTML=th||'<p class="quiet">—</p>';
   el('decisions').innerHTML=(d.decisions||[]).map(x=>esc(x)).join('<br>')||'—';
   el('updated').textContent=d.updated?('更新: '+d.updated):'';
 }
-fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(render).catch(function(){
-  el('greeting').textContent='読み込めませんでした';
-});
+async function decrypt(blob,pass){
+  var salt=b64d(blob.salt),iv=b64d(blob.iv),data=b64d(blob.ct);
+  var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  var key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,data);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function showLock(msg){el('lock').style.display='flex';el('err').textContent=msg||'';}
+var BLOB=null;
+async function tryPass(pass,save){
+  try{var d=await decrypt(BLOB,pass);if(save)localStorage.setItem('bpass',pass);el('lock').style.display='none';render(d);}
+  catch(e){showLock('合言葉が違うみたい。もう一度。');localStorage.removeItem('bpass');}
+}
+el('unlock').onclick=function(){var p=el('pass').value;if(p)tryPass(p,true);};
+el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock').click();});
+fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
+  if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
+  else render(d);
+}).catch(function(){el('greeting').textContent='読み込めませんでした';});
 </script>
 </body>
 </html>
