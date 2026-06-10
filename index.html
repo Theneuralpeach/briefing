@@ -100,8 +100,10 @@
 
   <div class="memo">
     <h3>📝 メモ（思いついたこと）</h3>
-    <p class="hint">ボタンを押すとメモ画面が開く。書いて送るとそのままNotionに届く。あとでClaudeに「アプリメモ見て」と言えば、一緒に育てられる。</p>
-    <a class="memo-btn" href="https://sizeme.notion.site/ebd//37bd8f409f9580ae8d71d22f0138e72f" target="_blank" rel="noopener">📝 思いついたことを書く →</a>
+    <p class="hint">ここに書いて送ると、そのままNotionに届く（ページは移動しない）。あとでClaudeに「アプリメモ見て」と言えば一緒に育てられる。</p>
+    <textarea id="memo" rows="3" placeholder="いま思いついたこと…"></textarea>
+    <button id="memo-send">送る</button>
+    <div class="memo-status" id="memo-status"></div>
   </div>
 
   <div class="foot"><span id="updated">—</span><br/><span id="sample-foot"></span></div>
@@ -155,6 +157,23 @@ async function tryPass(pass,save){
 }
 el('unlock').onclick=function(){var p=el('pass').value;if(p)tryPass(p,true);};
 el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock').click();});
+var NOTES_API="";
+(function(){
+  var btn=el('memo-send'),ta=el('memo'),st=el('memo-status');
+  if(!btn)return;
+  if(!NOTES_API){st.textContent='（メモ送信はもうすぐ使えるようになるよ）';}
+  btn.onclick=function(){
+    var note=(ta.value||'').trim();if(!note){return;}
+    if(!NOTES_API){st.textContent='まだ接続前。もう少し待ってね。';return;}
+    btn.disabled=true;st.textContent='送ってる…';
+    fetch(NOTES_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:note,secret:localStorage.getItem('bpass')||''})})
+      .then(function(r){return r.json();}).then(function(o){
+        btn.disabled=false;
+        if(o&&o.ok){ta.value='';st.textContent='送ったよ ✓ Notionに届いた。あとでClaudeに「アプリメモ見て」';}
+        else{st.textContent='うまく送れなかった: '+((o&&o.error)||'?');}
+      }).catch(function(){btn.disabled=false;st.textContent='送れなかった（通信エラー）';});
+  };
+})();
 fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
   else render(d);
