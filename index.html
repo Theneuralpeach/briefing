@@ -51,6 +51,13 @@
   .diary h3{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 4px}
   .diary .q{font-size:14px;color:var(--ink);margin:10px 0 0;line-height:1.5}
   .diary .hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .memo{margin-top:18px;background:var(--card);border:.5px solid var(--hair);border-radius:18px;padding:18px 20px}
+  .memo h3{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 4px}
+  .memo .hint{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+  .memo textarea{width:100%;border:1px solid var(--hair);border-radius:12px;padding:12px 14px;font-size:16px;font-family:var(--sans);color:var(--ink);background:var(--bg);resize:vertical;line-height:1.5}
+  .memo button{margin-top:10px;width:100%;height:44px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-family:var(--sans);font-weight:500}
+  .memo button:disabled{opacity:.45}
+  .memo-status{font-size:13px;margin-top:10px;min-height:18px;color:var(--muted)}
   .foot{margin-top:30px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.6}
   .sample{display:inline-block;background:#FAEEDA;color:var(--amber-ink);font-size:11px;padding:3px 10px;border-radius:20px;margin-top:10px}
   #lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px;z-index:9}
@@ -88,6 +95,14 @@
     <h3>📔 今日の日記</h3>
     <p class="q">① 睡眠　② 食べたもの　③ 誰と何を　④ 体調　⑤ 薬</p>
     <p class="hint">今日は何する日？ — 家で仕事 / 外で仕事 / 予定あり / オフ</p>
+  </div>
+
+  <div class="memo">
+    <h3>📝 メモ（思いついたこと）</h3>
+    <p class="hint">書いて送ると、あとでClaudeで一緒に育てられる。</p>
+    <textarea id="memo" rows="3" placeholder="いま思いついたこと…"></textarea>
+    <button id="memo-send">送る</button>
+    <div class="memo-status" id="memo-status"></div>
   </div>
 
   <div class="foot"><span id="updated">—</span><br/><span id="sample-foot"></span></div>
@@ -141,6 +156,25 @@ async function tryPass(pass,save){
 }
 el('unlock').onclick=function(){var p=el('pass').value;if(p)tryPass(p,true);};
 el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock').click();});
+var NOTES_API="";
+(function(){
+  var btn=el('memo-send'),ta=el('memo'),st=el('memo-status');
+  if(!NOTES_API){st.textContent='（メモ送信はもうすぐ使えるようになるよ）';}
+  btn.onclick=function(){
+    var note=ta.value.trim();if(!note){return;}
+    if(!NOTES_API){
+      var bak=JSON.parse(localStorage.getItem('memos')||'[]');bak.push({t:Date.now(),note:note});localStorage.setItem('memos',JSON.stringify(bak));
+      ta.value='';st.textContent='端末に保存した（接続後にまとめてNotionへ送れるよ）';return;
+    }
+    btn.disabled=true;st.textContent='送ってる…';
+    fetch(NOTES_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:note,secret:localStorage.getItem('bpass')||''})})
+      .then(r=>r.json()).then(function(o){
+        btn.disabled=false;
+        if(o&&o.ok){ta.value='';st.textContent='送ったよ ✓ Notionに入れたよ。あとでClaudeで「アプリメモ見て」';}
+        else{st.textContent='うまく送れなかった: '+(o&&o.error||'?');}
+      }).catch(function(e){btn.disabled=false;st.textContent='送れなかった（通信エラー）';});
+  };
+})();
 fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
   else render(d);
