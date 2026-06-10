@@ -159,12 +159,17 @@ el('pass').addEventListener('keydown',function(e){if(e.key==='Enter')el('unlock'
 var NOTES_API="";
 (function(){
   var btn=el('memo-send'),ta=el('memo'),st=el('memo-status');
-  if(!NOTES_API){st.textContent='（メモ送信はもうすぐ使えるようになるよ）';}
+  if(!NOTES_API){btn.textContent='コピーしてClaudeで相談';}
   btn.onclick=function(){
     var note=ta.value.trim();if(!note){return;}
     if(!NOTES_API){
+      var stamp=new Date().toLocaleString('ja-JP');
+      var text='【アプリメモ '+stamp+'】\n'+note+'\n\nこれについて一緒に考えたい。改善案やディスカッションをお願い。';
       var bak=JSON.parse(localStorage.getItem('memos')||'[]');bak.push({t:Date.now(),note:note});localStorage.setItem('memos',JSON.stringify(bak));
-      ta.value='';st.textContent='端末に保存した（接続後にまとめてNotionへ送れるよ）';return;
+      var done=function(){st.innerHTML='コピーしたよ ✓ <a href="https://claude.ai/new" target="_blank" style="color:var(--amber)">Claudeを開く</a> → 貼って相談してね';ta.value='';};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){st.textContent='コピーできなかった。長押しでコピーしてね。';});}
+      else{ta.select();try{document.execCommand('copy');done();}catch(e){st.textContent='長押しでコピーしてね。';}}
+      return;
     }
     btn.disabled=true;st.textContent='送ってる…';
     fetch(NOTES_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({note:note,secret:localStorage.getItem('bpass')||''})})
