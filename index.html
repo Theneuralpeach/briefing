@@ -88,28 +88,30 @@
 
   <section><p class="label">今ネットで人気のことば</p><p class="quiet" id="popular">—</p></section>
   <section><p class="label">🧠 今日知っておくこと</p><p class="quiet" id="neuro">—</p></section>
-  <section><p class="label">🗓 今日の予定</p><p class="quiet" id="schedule">—</p></section>
   <section id="emails-sec"><p class="label">📧 要返信メール</p><div id="emails"></div></section>
   <section id="tasks-sec"><p class="label">✅ 今日のタスク</p><div id="tasks"></div></section>
   <section id="dec-sec"><p class="label">🚨 モニカにしか決められないこと</p><div id="decisions" class="quiet"></div></section>
 
   <div class="foot"><span id="updated">—</span><br/><span id="sample-foot"></span></div>
 
-  <div class="memo" style="margin-top:28px">
-    <h3>🌙 おやすみ（夜の記録）</h3>
+  <section style="margin-top:24px"><p class="label">🗓 今日の予定</p><p class="quiet" id="schedule">—</p></section>
+  <section style="margin-top:14px"><p class="label">🌅 明日の予定</p><p class="quiet" id="schedule-tomorrow">—</p></section>
 
-    <p class="sub">📔 今日の日記</p>
-    <p class="hint">睡眠・食べたもの・誰と何した・体調・薬… 自由に。今日はどんな日だった？</p>
-    <textarea id="diary" rows="4" placeholder="今日はどうだった？"></textarea>
-    <button id="diary-send">日記を送る</button>
-    <div class="memo-status" id="diary-status"></div>
-
-    <p class="sub" style="margin-top:20px">💭 思いついたこと</p>
+  <div class="memo" style="margin-top:24px">
+    <p class="sub">💭 思いついたこと</p>
     <p class="hint">いつでも書いてOK。あとでClaudeに「アプリメモ見て」で一緒に育てられる。</p>
     <textarea id="memo" rows="3" placeholder="いま思いついたこと…"></textarea>
     <button id="memo-send">メモを送る</button>
     <div class="memo-status" id="memo-status"></div>
+
+    <p class="sub" style="margin-top:20px">📔 今日の日記</p>
+    <p class="hint">睡眠・食べたもの・誰と何した・体調・薬… 自由に。今日はどんな日だった？</p>
+    <textarea id="diary" rows="4" placeholder="今日はどうだった？"></textarea>
+    <button id="diary-send">日記を送る</button>
+    <div class="memo-status" id="diary-status"></div>
   </div>
+
+  <section id="doneweek-sec" style="margin-top:26px"><p class="label">✅ 今週やったこと（過去7日）</p><div id="done-week" class="quiet"></div></section>
 </div>
 
 <div id="lock">
@@ -138,11 +140,15 @@ function render(d){
   el('popular').textContent=d.popular||'';
   el('neuro').textContent=d.neuro||'';
   el('schedule').textContent=d.schedule||'';
+  el('schedule-tomorrow').textContent=d.schedule_tomorrow||'（朝の更新で入るよ）';
   el('emails').innerHTML=(d.emails||[]).map(m=>'<div class="mail"><span class="pri '+(m.p==='med'?'med':'')+'"></span><span><span class="who">'+esc(m.who)+' — '+esc(m.what)+'</span><br><span class="sub">'+esc(m.action)+'</span></span></div>').join('')||'<p class="quiet">要返信なし</p>';
+  var isDone=function(x){return /^\s*(✅|✔|☑|【済】|\[x\]|済)/.test(x);};
   var t=d.tasks||{},th='';
-  Object.keys(t).forEach(function(k){var arr=t[k]||[];if(!arr.length)return;th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(x=>'<div class="task"><span class="box"></span><span>'+esc(x)+'</span></div>').join('')+'</div>';});
+  Object.keys(t).forEach(function(k){var arr=(t[k]||[]).filter(function(x){return !isDone(x);});if(!arr.length)return;th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(x=>'<div class="task"><span class="box"></span><span>'+esc(x)+'</span></div>').join('')+'</div>';});
   el('tasks').innerHTML=th||'<p class="quiet">—</p>';
   el('decisions').innerHTML=(d.decisions||[]).map(x=>esc(x)).join('<br>')||'—';
+  var dw=d.done_week||[];
+  el('done-week').innerHTML=dw.length?dw.map(function(it){var dt=(it&&typeof it==='object')?(it.date||''):'';var tx=(it&&typeof it==='object')?(it.text||''):it;return '<div style="display:flex;gap:8px;margin:0 0 7px;font-size:14px;line-height:1.45;color:var(--ink)"><span style="color:#1D9E75">✓</span><span>'+(dt?'<span style="color:var(--muted);font-size:12px">'+esc(dt)+'</span> ':'')+esc(tx)+'</span></div>';}).join(''):'<p style="font-size:12.5px;margin:0">まだないよ。完了したタスクがここに溜まる（7日で自動で消える）。</p>';
   el('updated').textContent=d.updated?('更新: '+d.updated):'';
 }
 async function decrypt(blob,pass){
