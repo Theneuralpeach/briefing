@@ -189,6 +189,7 @@ fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
   else render(d);
 }).catch(function(){el('greeting').textContent='読み込めませんでした';});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
 </script>
 </body>
 </html>
