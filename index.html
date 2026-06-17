@@ -46,7 +46,8 @@
   .taskgroup{margin:0 0 14px}
   .taskgroup h3{font-size:13px;font-weight:500;margin:0 0 7px;color:var(--ink)}
   .task{display:flex;gap:9px;align-items:flex-start;font-size:14px;line-height:1.45;margin:0 0 7px;color:var(--ink)}
-  .task .box{width:15px;height:15px;border:1.5px solid var(--hair);border-radius:5px;flex:none;margin-top:2px}
+  .task .box{width:20px;height:20px;border:1.5px solid var(--hair);border-radius:6px;flex:none;margin-top:0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .12s,border-color .12s}
+  .task .box:active{background:var(--ink);border-color:var(--ink)}
   .diary{margin-top:26px;background:var(--card);border:.5px solid var(--hair);border-radius:18px;padding:18px 20px}
   .diary h3{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 4px}
   .diary .q{font-size:14px;color:var(--ink);margin:10px 0 0;line-height:1.5}
@@ -129,7 +130,22 @@
 function el(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 function b64d(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
+var LAST=null;
+function doneKey(s){return String(s==null?'':s).replace(/^\s*(✅|✔|☑|【済】|\[x\]|済)\s*/,'').trim();}
+function loadDone(){var a=[];try{a=JSON.parse(localStorage.getItem('doneTasks')||'[]');}catch(e){}var cut=Date.now()-7*864e5;a=a.filter(function(x){return x&&x.text&&x.ts>=cut;});localStorage.setItem('doneTasks',JSON.stringify(a));return a;}
+function addDone(text){text=doneKey(text);if(!text)return;var a=loadDone();if(a.some(function(x){return doneKey(x.text)===text;}))return;a.push({text:text,ts:Date.now()});localStorage.setItem('doneTasks',JSON.stringify(a));}
+function fmtDay(ts){var dd=new Date(ts-5*3600*1000);return (dd.getMonth()+1)+'/'+dd.getDate();}
+function renderDone(payloadDW){
+  var node=el('done-week');if(!node)return;
+  var items=loadDone().map(function(x){return {text:doneKey(x.text),ts:x.ts,date:fmtDay(x.ts)};});
+  var seen={};items.forEach(function(x){seen[x.text]=1;});
+  (payloadDW||[]).forEach(function(it){var tx=(it&&typeof it==='object')?(it.text||''):it;var dt=(it&&typeof it==='object')?(it.date||''):'';tx=doneKey(tx);if(!tx||seen[tx])return;seen[tx]=1;items.push({text:tx,ts:0,date:dt});});
+  items.sort(function(a,b){return b.ts-a.ts;});
+  node.className='';
+  node.innerHTML=items.length?items.map(function(x){return '<div style="display:flex;gap:8px;margin:0 0 8px;font-size:14px;line-height:1.45;color:var(--ink)"><span style="color:#1D9E75;flex:none">✓</span><span>'+(x.date?'<span style="color:var(--muted);font-size:12px">'+esc(x.date)+'</span> ':'')+esc(x.text)+'</span></div>';}).join(''):'<p class="quiet" style="font-size:12.5px;margin:0">まだないよ。タスクの□をタップすると、ここに溜まる（7日で自動で消える）。</p>';
+}
 function render(d){
+  LAST=d;
   el('date').textContent=d.date||'';
   if(d.greeting)el('greeting').textContent=d.greeting;
   if(d.sample){el('sample-badge').innerHTML='<span class="sample">サンプル表示</span>';el('sample-foot').textContent='これはデザイン確認用のサンプルです。';}
@@ -143,12 +159,16 @@ function render(d){
   el('schedule-tomorrow').textContent=d.schedule_tomorrow||'（朝の更新で入るよ）';
   el('emails').innerHTML=(d.emails||[]).map(m=>'<div class="mail"><span class="pri '+(m.p==='med'?'med':'')+'"></span><span><span class="who">'+esc(m.who)+' — '+esc(m.what)+'</span><br><span class="sub">'+esc(m.action)+'</span></span></div>').join('')||'<p class="quiet">要返信なし</p>';
   var isDone=function(x){return /^\s*(✅|✔|☑|【済】|\[x\]|済)/.test(x);};
+  var doneSet={};loadDone().forEach(function(x){doneSet[doneKey(x.text)]=1;});
   var t=d.tasks||{},th='';
-  Object.keys(t).forEach(function(k){var arr=(t[k]||[]).filter(function(x){return !isDone(x);});if(!arr.length)return;th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(x=>'<div class="task"><span class="box"></span><span>'+esc(x)+'</span></div>').join('')+'</div>';});
-  el('tasks').innerHTML=th||'<p class="quiet">—</p>';
+  Object.keys(t).forEach(function(k){
+    var arr=(t[k]||[]).filter(function(x){if(isDone(x)){addDone(x);return false;}return !doneSet[doneKey(x)];});
+    if(!arr.length)return;
+    th+='<div class="taskgroup"><h3>'+esc(k)+'</h3>'+arr.map(function(x){return '<div class="task"><span class="box" role="button" aria-label="完了にする" data-task="'+esc(x)+'"></span><span>'+esc(x)+'</span></div>';}).join('')+'</div>';
+  });
+  el('tasks').innerHTML=th||'<p class="quiet">ぜんぶ完了！えらい！</p>';
   el('decisions').innerHTML=(d.decisions||[]).map(x=>esc(x)).join('<br>')||'—';
-  var dw=d.done_week||[];
-  el('done-week').innerHTML=dw.length?dw.map(function(it){var dt=(it&&typeof it==='object')?(it.date||''):'';var tx=(it&&typeof it==='object')?(it.text||''):it;return '<div style="display:flex;gap:8px;margin:0 0 7px;font-size:14px;line-height:1.45;color:var(--ink)"><span style="color:#1D9E75">✓</span><span>'+(dt?'<span style="color:var(--muted);font-size:12px">'+esc(dt)+'</span> ':'')+esc(tx)+'</span></div>';}).join(''):'<p style="font-size:12.5px;margin:0">まだないよ。完了したタスクがここに溜まる（7日で自動で消える）。</p>';
+  renderDone(d.done_week||[]);
   el('updated').textContent=d.updated?('更新: '+d.updated):'';
 }
 async function decrypt(blob,pass){
@@ -184,6 +204,8 @@ var NOTES_API="https://briefing.theneuralpeach.deno.net";
   }
   wire('diary','diary-send','diary-status','diary','日記を送ったよ ✓ Notionに届いた');
   wire('memo','memo-send','memo-status','memo','送ったよ ✓ あとでClaudeに「アプリメモ見て」');
+  var tasksEl=el('tasks');
+  if(tasksEl){tasksEl.addEventListener('click',function(e){var b=e.target;if(!b||!b.classList||!b.classList.contains('box'))return;var sib=b.nextElementSibling;var task=sib?sib.textContent:b.getAttribute('data-task');if(!task)return;addDone(task);if(LAST)render(LAST);else renderDone([]);});}
 })();
 fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
