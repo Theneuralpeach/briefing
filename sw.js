@@ -1,7 +1,7 @@
 // Briefing app service worker — network-first.
 // Always tries the network so the app shows the latest deploy/data;
 // falls back to the last cached copy only when offline.
-const CACHE = 'briefing-v1';
+const CACHE = 'briefing-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

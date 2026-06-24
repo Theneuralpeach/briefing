@@ -207,7 +207,11 @@ var NOTES_API="https://briefing.theneuralpeach.deno.net";
   var tasksEl=el('tasks');
   if(tasksEl){tasksEl.addEventListener('click',function(e){var b=e.target;if(!b||!b.classList||!b.classList.contains('box'))return;var sib=b.nextElementSibling;var task=sib?sib.textContent:b.getAttribute('data-task');if(!task)return;addDone(task);if(LAST)render(LAST);else renderDone([]);});}
 })();
-fetch('./data/today.json?_='+Date.now()).then(r=>r.json()).then(function(d){
+fetch('./data/today.json?_='+Date.now()).then(function(r){return r.text();}).then(function(txt){
+  txt=(txt||'').trim();var d=null;
+  try{d=JSON.parse(txt);}catch(e){try{d=JSON.parse(new TextDecoder().decode(b64d(txt.replace(/\s/g,''))));}catch(e2){d=null;}}
+  return d;
+}).then(function(d){
   if(d&&d.enc){BLOB=d;var saved=localStorage.getItem('bpass');if(saved)tryPass(saved,false);else showLock('');}
   else render(d);
 }).catch(function(){el('greeting').textContent='読み込めませんでした';});
